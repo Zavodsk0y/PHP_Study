@@ -2,32 +2,28 @@
 
 namespace MyProject\Controllers;
 
+use MyProject\Exceptions\ForbiddenException;
+use MyProject\Exceptions\InvalidArgumentException;
 use MyProject\Exceptions\NotFoundException;
+use MyProject\Exceptions\UnAuthorizedException;
 use MyProject\Models\Articles\Article;
-use MyProject\Models\Users\User;
-use MyProject\View\View;
+use MyProject\Models\Comments\Comment;
 
-class ArticlesController
+class ArticlesController extends AbstractController
 {
-    private View $view;
-
-    public function __construct()
-    {
-        $this->view = new View(__DIR__ . '/../../../templates');
-    }
-
     public function view(int $articleId): void
     {
         $article = Article::getById($articleId);
+        $comments = Comment::getCommentsForArticle($articleId);
 
         if ($article === null) {
             throw new NotFoundException();
         }
 
-        $this->view->renderHtml('articles/view.php', ['article' => $article]);
+        $this->view->renderHtml('articles/view.php', ['article' => $article, 'comments' => $comments]);
     }
 
-    public function edit(int $articleId): void
+    public function edit(int $articleId)
     {
         $article = Article::getById($articleId);
 
@@ -35,24 +31,52 @@ class ArticlesController
             throw new NotFoundException();
         }
 
-        $article->setName("Нью статьяяяяяя");
-        $article->setText("Новый теееееекст");
+        if ($this->user === null) {
+            throw new UnauthorizedException();
+        }
 
-        $article->save();
+        if ($this->user->getRole() !== 'admin') {
+            throw new ForbiddenException('У вас нет прав администратора');
+        }
+
+        if (!empty($_POST)) {
+            try {
+                $article->updateFromArray($_POST);
+            } catch (InvalidArgumentException $e) {
+                $this->view->renderHtml('articles/edit.php', ['error' => $e->getMessage(), 'article' => $article]);
+                return;
+            }
+
+            header('Location: /articles/' . $article->getId(), true, 302);
+            exit();
+        }
+
+        $this->view->renderHtml('articles/edit.php', ['article' => $article]);
     }
 
     public function create(): void
     {
-        $author = User::getById(1);
+        if ($this->user === null) {
+            throw new UnAuthorizedException('Вы не авторизованы!');
+        }
 
-        $article = new Article();
-        $article->setName('Новая статья добавлена');
-        $article->setText('Текст новой статьи');
-        $article->setAuthor($author);
+        if ($this->user->getRole() !== 'admin') {
+            throw new ForbiddenException('У вас нет прав администратора');
+        }
 
-        $article->save();
+        if (!empty($_POST)) {
+            try {
+                $article = Article::createFromArray($_POST, $this->user);
+            } catch (InvalidArgumentException $e) {
+                $this->view->renderHtml('articles/create.php', ['error' => $e->getMessage()]);
+                return;
+            }
 
-        print_r($article);
+            header('Location: /articles/' . $article->getId(), true, 302);
+            exit();
+        }
+
+        $this->view->renderHtml('articles/create.php');
     }
 
     public function delete(int $articleId): void

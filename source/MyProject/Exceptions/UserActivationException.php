@@ -4,7 +4,7 @@ namespace MyProject\Exceptions;
 
 use Exception;
 
-class NotFoundException extends Exception
+class UserActivationException extends Exception
 {
 }
 
