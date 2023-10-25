@@ -21,17 +21,15 @@ class UsersController extends AbstractController
                 return;
             }
 
-            if ($user instanceof User) {
-                $code = UserActivationService::createActivationCode($user);
+            $code = UserActivationService::createActivationCode($user);
 
-                EmailSender::send($user, 'Активация', 'userActivation.php', [
-                    'user_id' => $user->getId(),
-                    'code' => $code
-                ]);
+            EmailSender::send($user, 'Активация', 'userActivation.php', [
+                'user_id' => $user->getId(),
+                'code' => $code
+            ]);
 
                 $this->view->renderHtml('users/signUpSuccessful.php');
                 return;
-            }
         }
 
         $this->view->renderHtml('users/signUp.php');
@@ -52,11 +50,10 @@ class UsersController extends AbstractController
                 throw new UserActivationException('Неверный код активации или пользователь уже активирован!');
             }
 
-            if ($isCodeValid) {
-                $user->activate();
-                echo 'OK!';
-                UserActivationService::deleteActivationCode($user, $activationCode);
-            }
+            $user->activate();
+            echo 'OK!';
+            UserActivationService::deleteActivationCode($user, $activationCode);
+            
         } catch (UserActivationException $e) {
             $this->view->renderHtml('errors/userError.php', ['error' => $e->getMessage()]);
         }
