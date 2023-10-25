@@ -60,6 +60,20 @@ abstract class ActiveRecordEntity
         $this->id = null;
     }
 
+    public static function findOneByColumn(string $columnName, $value): ?self
+    {
+        $db = Db::getInstance();
+        $result = $db->query(
+            'SELECT * FROM ' . static::getTableName() . ' WHERE ' . $columnName . ' = :value LIMIT 1;',
+            [':value' => $value],
+            static::class
+        );
+        if ($result === []) {
+            return null;
+        }
+        return $result[0];
+    }
+
     private function underscoreToCamelCase(string $source): string
     {
         return lcfirst(str_replace('_', '', ucwords($source, '_')));
@@ -76,7 +90,7 @@ abstract class ActiveRecordEntity
         $properties = $reflector->getProperties();
 
         $mappedProperties = [];
-        foreach($properties as $property) {
+        foreach ($properties as $property) {
             $propertyName = $property->getName();
             $propertyNameAsUnderscore = $this->camelCaseToUnderscore($propertyName);
             $mappedProperties[$propertyNameAsUnderscore] = $this->$propertyName;

@@ -10,9 +10,9 @@ class Db
 {
     private PDO $pdo;
 
-    private static Db $instance;
+    private static $instance;
 
-    public static function getInstance(): self
+    public static function getInstance()
     {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -29,7 +29,7 @@ class Db
                 'pgsql:host=' . $dbOptions['host'] . ';dbname=' . $dbOptions['dbname'],
                 $dbOptions['user'],
                 $dbOptions['password']);
-            } catch (PDOException $e) {
+        } catch (PDOException $e) {
             throw new DbException("Ошибка при подключении к базе данных: " . $e->getMessage());
         }
     }
